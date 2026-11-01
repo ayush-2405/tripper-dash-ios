@@ -9,10 +9,13 @@ final class K1GPacketTests: XCTestCase {
         )
     }
 
-    func testBuildAndParseSingleTLV() {
-        let original = DashTLV(type: 0x07, sub: 0x01, value: Data([0x01]))
-        let packet = K1GPacket.build([original])
-        XCTAssertEqual(K1GPacket.parseIncoming(packet), [original])
+    func testParseIncomingTLVUsesShortHeader() {
+        // Incoming dash packets place TLVs at offset 8, unlike outgoing K1G packets.
+        let incoming = Data([0x00,0x0D,0x00,0x01,0,0,0,0,0x07,0x01,0x00,0x01,0x01])
+        XCTAssertEqual(
+            K1GPacket.parseIncoming(incoming),
+            [DashTLV(type: 0x07, sub: 0x01, value: Data([0x01]))]
+        )
     }
 
     func testSequencePatchChangesK1GSequenceByte() {
