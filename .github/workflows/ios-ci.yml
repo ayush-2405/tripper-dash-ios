@@ -34,3 +34,6 @@ jobs:
 
       - name: Build iOS app for Simulator
         run: xcodebuild -project TripperDash.xcodeproj -scheme TripperDash -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+      - name: Build iOS app for physical devices (unsigned validation)
+        run: xcodebuild -project TripperDash.xcodeproj -scheme TripperDash -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
