@@ -34,7 +34,20 @@ xcodebuild -project TripperDash.xcodeproj \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-Open `TripperDash.xcodeproj` in Xcode to run on a connected iPhone. Device installation requires a valid Apple development signing team and provisioning profile.
+### Install on your iPhone
+
+1. On a Mac, install Xcode and XcodeGen (`brew install xcodegen`).
+2. Clone this repository and check out `ios/dash-auth-network`.
+3. From the repository root, run `xcodegen generate`.
+4. Open `TripperDash.xcodeproj` in Xcode.
+5. Connect your iPhone by cable, unlock it, and trust the Mac if prompted.
+6. Select the `TripperDash` target → **Signing & Capabilities** → enable **Automatically manage signing** → select your Apple Development team.
+7. Confirm the bundle identifier is unique to your account if Xcode asks you to change it.
+8. Select your iPhone as the run destination and press **Run**. Accept the developer-mode/trust prompts on the phone if iOS displays them.
+
+A free Personal Team may be sufficient for a local development install, but Apple's Hotspot Configuration entitlement must be available to the selected signing team and included in its provisioning profile. If Xcode reports that the entitlement is not permitted, the app cannot use the in-app Wi-Fi join flow with that profile; do not remove the entitlement and assume the flow will work. We can adapt the test to manual Wi-Fi association if needed.
+
+CI now builds both the Simulator target and the generic physical-device target without signing. This verifies compilation for device architecture, but it does not create an installable IPA or replace Xcode signing.
 
 ## First physical-device test
 
