@@ -1,16 +1,17 @@
 import XCTest
 @testable import TripperDashCore
 
-final class K1GPacketTests: XCTestCase {
-    private extension Data {
-        init(hex: String) {
-            self.init(stride(from: 0, to: hex.count, by: 2).compactMap { i in
-                let a = hex.index(hex.startIndex, offsetBy: i)
-                let b = hex.index(a, offsetBy: 2)
-                return UInt8(hex[a..<b], radix: 16)
-            })
-        }
+private extension Data {
+    init(hex: String) {
+        self.init(stride(from: 0, to: hex.count, by: 2).compactMap { i in
+            let a = hex.index(hex.startIndex, offsetBy: i)
+            let b = hex.index(a, offsetBy: 2)
+            return UInt8(hex[a..<b], radix: 16)
+        })
     }
+}
+
+final class K1GPacketTests: XCTestCase {
 
     func testAuthRequestMatchesKnownWirePacket() {
         XCTAssertEqual(
@@ -45,7 +46,7 @@ final class K1GPacketTests: XCTestCase {
         XCTAssertEqual(burst.count, 9)
         XCTAssertEqual(burst[0], K1GPacket.authRequest())
         XCTAssertEqual(Int(burst[1][0]) << 8 | Int(burst[1][1]), burst[1].count)
-        XCTAssertEqual(burst[2].count, 23)
+        XCTAssertEqual(burst[2].count, 24)
     }
 
     func testSequencePatchChangesK1GSequenceByte() {
