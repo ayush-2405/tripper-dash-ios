@@ -56,7 +56,9 @@ public final class DashUDPTransport {
             guard let self else { return }
             var buffer = [UInt8](repeating: 0, count: 65_535)
             while self.rxFD >= 0 {
-                let count = recv(self.rxFD, &buffer, buffer.count, 0)
+                let count = buffer.withUnsafeMutableBytes { rawBuffer in
+                    recv(self.rxFD, rawBuffer.baseAddress, rawBuffer.count, 0)
+                }
                 if count > 0 {
                     let packet = Data(buffer[0..<count])
                     callbackQueue.async { handler(packet) }
