@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Connect to your Royal Enfield Tripper Dash over its local Wi-Fi network.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Location permission may be used by future navigation features.</string>
+    <key>UILaunchScreen</key>
+    <dict/>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array><string>arm64</string></array>
+</dict>
+</plist>
