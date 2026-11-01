@@ -68,9 +68,10 @@ final class DashboardDiagnosticModel: ObservableObject {
     }
 
     func disconnect() {
+        // DashSession owns the transport lifecycle and closes it on its serial
+        // queue. Avoid closing the same descriptors concurrently here.
         session?.stop()
         session = nil
-        transport?.close()
         transport = nil
         isConnecting = false
         connectionStatus = "Disconnected"
