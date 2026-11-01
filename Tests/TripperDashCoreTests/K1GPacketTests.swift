@@ -39,6 +39,24 @@ final class K1GPacketTests: XCTestCase {
         XCTAssertEqual(packet.suffix(128), ciphertext)
     }
 
+    func testAuthConfirmationIsIgnoredBeforeKeyExchange() throws {
+        let auth = DashAuth(ssid: "test-network")
+        XCTAssertEqual(
+            try auth.ingest(DashTLV(type: 0x07, sub: 0x01, value: Data([0x01]))),
+            .none
+        )
+    }
+
+    func testPublicKeyComponentsCanArriveInEitherOrder() throws {
+        let auth = DashAuth(ssid: "test-network")
+        let exponent = DashTLV(type: 0x07, sub: 0x03, value: Data([0x01, 0x00, 0x01]))
+        let modulus = DashTLV(type: 0x07, sub: 0x00, value: Data(repeating: 0xA5, count: 128))
+
+        XCTAssertEqual(try auth.ingest(exponent), .none)
+        XCTAssertEqual(try auth.ingest(modulus), .none)
+        XCTAssertEqual(try auth.ingest(exponent), .none)
+    }
+
     func testAuthKeyPacketRejectsWrongCiphertextLength() {
         XCTAssertThrowsError(try K1GPacket.authKeyPacket(ciphertext: Data(repeating: 0, count: 127)))
     }
