@@ -11,7 +11,7 @@ public enum DashAuthError: Error, Equatable {
     case securityFrameworkUnavailable
 }
 
-public enum DashAuthEvent {
+public enum DashAuthEvent: Equatable {
     case sendKey(Data)
     case confirmed
     case rejected
