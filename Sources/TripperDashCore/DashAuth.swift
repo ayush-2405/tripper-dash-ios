@@ -40,6 +40,9 @@ public final class DashAuth {
         case 0x03:
             exponent = tlv.value
         case 0x01:
+            // Ignore unsolicited/stale confirmation packets. The dash can only
+            // confirm a session after we have actually transmitted its key.
+            guard keySent, sessionKey != nil else { return .none }
             return tlv.value.first == 0x01 ? .confirmed : .rejected
         default:
             return .none
