@@ -33,10 +33,16 @@ public final class DashSession {
             self.transport.receive { [weak self] packet in
                 self?.handleIncoming(packet)
             }
-            do {
-                try self.transport.sendControl(K1GPacket.authRequest())
-            } catch {
-                self.onStateChange?(.failed(String(describing: error)))
+            let burst = DashCommands.initialBurst(hostname: "iPhone")
+            for (index, packet) in burst.enumerated() {
+                self.callbackQueue.asyncAfter(deadline: .now() + .milliseconds(index * 20)) {
+                    guard self.started else { return }
+                    do {
+                        try self.transport.sendControl(packet)
+                    } catch {
+                        self.onStateChange?(.failed(String(describing: error)))
+                    }
+                }
             }
         }
     }
