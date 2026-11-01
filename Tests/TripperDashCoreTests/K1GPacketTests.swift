@@ -2,6 +2,16 @@ import XCTest
 @testable import TripperDashCore
 
 final class K1GPacketTests: XCTestCase {
+    private extension Data {
+        init(hex: String) {
+            self.init(stride(from: 0, to: hex.count, by: 2).compactMap { i in
+                let a = hex.index(hex.startIndex, offsetBy: i)
+                let b = hex.index(a, offsetBy: 2)
+                return UInt8(hex[a..<b], radix: 16)
+            })
+        }
+    }
+
     func testAuthRequestMatchesKnownWirePacket() {
         XCTAssertEqual(
             K1GPacket.authRequest(),
@@ -16,6 +26,26 @@ final class K1GPacketTests: XCTestCase {
             K1GPacket.parseIncoming(incoming),
             [DashTLV(type: 0x07, sub: 0x01, value: Data([0x01]))]
         )
+    }
+
+    func testAuthKeyPacketHasExpectedHeaderAndCiphertextLength() throws {
+        let ciphertext = Data(repeating: 0xAB, count: 128)
+        let packet = try K1GPacket.authKeyPacket(ciphertext: ciphertext)
+        XCTAssertEqual(packet.count, 149)
+        XCTAssertEqual(Array(packet.prefix(21)), Data(hex: "0095000200000000020100054B3147200008000080"))
+        XCTAssertEqual(packet.suffix(128), ciphertext)
+    }
+
+    func testAuthKeyPacketRejectsWrongCiphertextLength() {
+        XCTAssertThrowsError(try K1GPacket.authKeyPacket(ciphertext: Data(repeating: 0, count: 127)))
+    }
+
+    func testInitialBurstHasExpectedNinePackets() {
+        let burst = DashCommands.initialBurst(hostname: "WayFindR")
+        XCTAssertEqual(burst.count, 9)
+        XCTAssertEqual(burst[0], K1GPacket.authRequest())
+        XCTAssertEqual(Int(burst[1][0]) << 8 | Int(burst[1][1]), burst[1].count)
+        XCTAssertEqual(burst[2].count, 23)
     }
 
     func testSequencePatchChangesK1GSequenceByte() {
