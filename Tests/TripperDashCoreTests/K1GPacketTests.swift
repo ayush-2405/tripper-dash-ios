@@ -33,7 +33,7 @@ final class K1GPacketTests: XCTestCase {
         let ciphertext = Data(repeating: 0xAB, count: 128)
         let packet = try K1GPacket.authKeyPacket(ciphertext: ciphertext)
         XCTAssertEqual(packet.count, 149)
-        XCTAssertEqual(Array(packet.prefix(21)), Data(hex: "0095000200000000020100054B3147200008000080"))
+        XCTAssertEqual(Array(packet.prefix(20)), Data(hex: "0095000200000000020100054B3147200008000080"))
         XCTAssertEqual(packet.suffix(128), ciphertext)
     }
 
