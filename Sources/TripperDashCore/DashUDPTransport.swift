@@ -7,10 +7,12 @@ public enum DashTransportError: Error {
     case bind(String)
     case interfaceBind(String)
     case send(String)
+    case closed
 }
 
 /// Minimal BSD UDP transport for the dash control and RTP planes.
 /// Create this only after iOS has joined the dashboard's Wi-Fi network.
+/// Closing a transport is terminal; create a new instance to reconnect.
 public final class DashUDPTransport {
     public static let dashAddress = "192.168.1.1"
     public static let broadcastAddress = "192.168.1.255"
@@ -22,57 +24,94 @@ public final class DashUDPTransport {
     private var rxFD: Int32 = -1
     private var rtpFD: Int32 = -1
     private var sequence: UInt8 = 0
+    private let socketLock = NSLock()
     private let queue = DispatchQueue(label: "tripperdash.udp.receive")
+    private var receiveStarted = false
 
     public init() throws {
-        txFD = try Self.makeSocket()
-        rxFD = try Self.makeSocket()
-        rtpFD = try Self.makeSocket()
+        var tx: Int32 = -1
+        var rx: Int32 = -1
+        var rtp: Int32 = -1
         do {
+            tx = try Self.makeSocket()
+            rx = try Self.makeSocket()
+            rtp = try Self.makeSocket()
+
             var yes: Int32 = 1
-            _ = setsockopt(txFD, SOL_SOCKET, SO_BROADCAST, &yes, socklen_t(MemoryLayout<Int32>.size))
-            try Self.bindSocket(txFD, port: Self.controlPort)
-            try Self.bindSocket(rxFD, port: Self.receivePort)
+            guard setsockopt(tx, SOL_SOCKET, SO_BROADCAST, &yes, socklen_t(MemoryLayout<Int32>.size)) == 0 else {
+                throw DashTransportError.bind(String(cString: strerror(errno)))
+            }
+            try Self.bindSocket(tx, port: Self.controlPort)
+            try Self.bindSocket(rx, port: Self.receivePort)
+
+            txFD = tx
+            rxFD = rx
+            rtpFD = rtp
         } catch {
-            closeSockets()
+            for fd in [tx, rx, rtp] where fd >= 0 { Darwin.close(fd) }
             throw error
         }
     }
 
-    deinit { closeSockets() }
+    deinit { close() }
 
     public func sendControl(_ packet: Data) throws {
+        socketLock.lock()
+        defer { socketLock.unlock() }
+        guard txFD >= 0 else { throw DashTransportError.closed }
         let sequenced = K1GPacket.patchSequence(packet, sequence: sequence)
+        try Self.send(sequenced, fd: txFD, host: Self.broadcastAddress, port: Self.controlPort)
         sequence &+= 1
-        try send(sequenced, fd: txFD, host: Self.broadcastAddress, port: Self.controlPort)
     }
 
     public func sendRTP(_ packet: Data) throws {
-        try send(packet, fd: rtpFD, host: Self.dashAddress, port: Self.rtpPort)
+        socketLock.lock()
+        defer { socketLock.unlock() }
+        guard rtpFD >= 0 else { throw DashTransportError.closed }
+        try Self.send(packet, fd: rtpFD, host: Self.dashAddress, port: Self.rtpPort)
     }
 
-    /// Receive on UDP/2002 until cancelled; packets are delivered on the supplied queue.
+    /// Receive on UDP/2002 until the transport is closed. Only one receive loop is allowed.
     public func receive(on callbackQueue: DispatchQueue = .main, handler: @escaping (Data) -> Void) {
-        queue.async { [weak self] in
-            guard let self else { return }
+        socketLock.lock()
+        guard rxFD >= 0, !receiveStarted else {
+            socketLock.unlock()
+            return
+        }
+        receiveStarted = true
+        let receiveFD = rxFD
+        socketLock.unlock()
+
+        queue.async {
             var buffer = [UInt8](repeating: 0, count: 65_535)
-            while self.rxFD >= 0 {
+            while true {
                 let count = buffer.withUnsafeMutableBytes { rawBuffer in
-                    recv(self.rxFD, rawBuffer.baseAddress, rawBuffer.count, 0)
+                    recv(receiveFD, rawBuffer.baseAddress, rawBuffer.count, 0)
                 }
                 if count > 0 {
                     let packet = Data(buffer[0..<count])
                     callbackQueue.async { handler(packet) }
-                } else if count < 0 && errno != EINTR {
+                } else if count < 0 && errno == EINTR {
+                    continue
+                } else {
                     break
                 }
             }
         }
     }
 
-    public func close() { closeSockets() }
+    public func close() {
+        socketLock.lock()
+        defer { socketLock.unlock() }
+        // shutdown wakes a blocked recv before the descriptor is closed.
+        if rxFD >= 0 { _ = Darwin.shutdown(rxFD, SHUT_RDWR) }
+        for fd in [txFD, rxFD, rtpFD] where fd >= 0 { Darwin.close(fd) }
+        txFD = -1
+        rxFD = -1
+        rtpFD = -1
+    }
 
-    private func send(_ data: Data, fd: Int32, host: String, port: UInt16) throws {
+    private static func send(_ data: Data, fd: Int32, host: String, port: UInt16) throws {
         var address = sockaddr_in()
         address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
         address.sin_family = sa_family_t(AF_INET)
@@ -130,11 +169,6 @@ public final class DashUDPTransport {
             }
         }
         guard result == 0 else { throw DashTransportError.bind(String(cString: strerror(errno))) }
-    }
-
-    private func closeSockets() {
-        for fd in [txFD, rxFD, rtpFD] where fd >= 0 { Darwin.close(fd) }
-        txFD = -1; rxFD = -1; rtpFD = -1
     }
 }
 #else
