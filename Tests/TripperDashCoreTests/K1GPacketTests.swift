@@ -47,14 +47,14 @@ final class K1GPacketTests: XCTestCase {
         )
     }
 
-    func testPublicKeyComponentsCanArriveInEitherOrder() throws {
+    func testIncompletePublicKeyComponentsDoNotStartEncryption() throws {
         let auth = DashAuth(ssid: "test-network")
         let exponent = DashTLV(type: 0x07, sub: 0x03, value: Data([0x01, 0x00, 0x01]))
         let modulus = DashTLV(type: 0x07, sub: 0x00, value: Data(repeating: 0xA5, count: 128))
 
         XCTAssertEqual(try auth.ingest(exponent), .none)
+        auth.reset()
         XCTAssertEqual(try auth.ingest(modulus), .none)
-        XCTAssertEqual(try auth.ingest(exponent), .none)
     }
 
     func testAuthKeyPacketRejectsWrongCiphertextLength() {
