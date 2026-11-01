@@ -35,9 +35,11 @@ public enum K1GPacket {
 
     public static func patchSequence(_ packet: Data, sequence: UInt8) -> Data {
         var bytes = Array(packet)
-        if let magicIndex = bytes.windows(ofCount: 4).firstIndex(where: { Array($0) == magic }),
-           magicIndex + 4 < bytes.count {
-            bytes[magicIndex + 4] = sequence
+        if bytes.count >= 5 {
+            for index in 0...(bytes.count - 4) where Array(bytes[index..<(index + 4)]) == magic {
+                bytes[index + 4] = sequence
+                break
+            }
         }
         if bytes.count >= 2 {
             bytes[0] = UInt8((bytes.count >> 8) & 0xff)
@@ -86,9 +88,3 @@ private extension Data {
     }
 }
 
-private extension Array {
-    func windows(ofCount count: Int) -> [[Element]] {
-        guard count > 0, count <= self.count else { return [] }
-        return (0...(self.count - count)).map { Array(self[$0..<($0 + count)]) }
-    }
-}
