@@ -5,6 +5,7 @@ import Darwin
 public enum DashTransportError: Error {
     case socketCreation(String)
     case bind(String)
+    case interfaceBind(String)
     case send(String)
 }
 
@@ -92,6 +93,28 @@ public final class DashUDPTransport {
     private static func makeSocket() throws -> Int32 {
         let fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
         guard fd >= 0 else { throw DashTransportError.socketCreation(String(cString: strerror(errno))) }
+        #if os(iOS)
+        // en0 is the Wi-Fi interface on iOS. Binding each socket keeps dashboard
+        // traffic off cellular while leaving the process's default route untouched.
+        let interfaceIndex = if_nametoindex("en0")
+        guard interfaceIndex != 0 else {
+            Darwin.close(fd)
+            throw DashTransportError.interfaceBind("Could not resolve the Wi-Fi interface (en0)")
+        }
+        var index = interfaceIndex
+        let result = setsockopt(
+            fd,
+            IPPROTO_IP,
+            IP_BOUND_IF,
+            &index,
+            socklen_t(MemoryLayout<UInt32>.size)
+        )
+        guard result == 0 else {
+            let message = String(cString: strerror(errno))
+            Darwin.close(fd)
+            throw DashTransportError.interfaceBind(message)
+        }
+        #endif
         return fd
     }
 
