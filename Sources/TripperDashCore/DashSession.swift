@@ -31,7 +31,7 @@ public final class DashSession {
         }
     }
 
-    private let transport: DashUDPTransport
+    private let transport: any DashTransport
     private let auth: DashAuth
     private let configuration: Configuration
     private let callbackQueue = DispatchQueue(label: "tripperdash.session.state")
@@ -44,7 +44,7 @@ public final class DashSession {
 
     public var onStateChange: ((DashSessionState) -> Void)?
 
-    public init(ssid: String, transport: DashUDPTransport, configuration: Configuration = Configuration()) {
+    public init(ssid: String, transport: any DashTransport, configuration: Configuration = Configuration()) {
         self.transport = transport
         self.auth = DashAuth(ssid: ssid)
         self.configuration = configuration
@@ -60,7 +60,7 @@ public final class DashSession {
             self.lastReceiveAt = .now()
             self.onStateChange?(.authenticating)
 
-            self.transport.receive { [weak self] packet in
+            self.transport.receive(on: self.callbackQueue) { [weak self] packet in
                 self?.handleIncoming(packet)
             }
             self.sendInitialBurst()
