@@ -1,5 +1,5 @@
 import Foundation
-#if canImport(NetworkExtension)
+#if os(iOS) && canImport(NetworkExtension)
 import NetworkExtension
 
 public enum DashWiFiError: Error {
