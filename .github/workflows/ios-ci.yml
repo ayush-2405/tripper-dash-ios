@@ -36,4 +36,19 @@ jobs:
         run: xcodebuild -project TripperDash.xcodeproj -scheme TripperDash -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
       - name: Build iOS app for physical devices (unsigned validation)
-        run: xcodebuild -project TripperDash.xcodeproj -scheme TripperDash -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+        run: xcodebuild -project TripperDash.xcodeproj -scheme TripperDash -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO build
+
+      - name: Package unsigned iOS app for sideloading
+        run: |
+          mkdir -p build/Payload
+          cp -R build/DerivedData/Build/Products/Release-iphoneos/TripperDash.app build/Payload/TripperDash.app
+          cd build
+          ditto -c -k --sequesterRsrc --keepParent Payload TripperDash-unsigned.ipa
+
+      - name: Upload unsigned iOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: TripperDash-unsigned-IPA
+          path: build/TripperDash-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
