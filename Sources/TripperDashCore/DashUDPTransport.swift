@@ -2,6 +2,13 @@ import Foundation
 #if canImport(Darwin)
 import Darwin
 
+public protocol DashTransport: AnyObject {
+    func sendControl(_ packet: Data) throws
+    func sendRTP(_ packet: Data) throws
+    func receive(on callbackQueue: DispatchQueue, handler: @escaping (Data) -> Void)
+    func close()
+}
+
 public enum DashTransportError: Error {
     case socketCreation(String)
     case bind(String)
@@ -13,7 +20,7 @@ public enum DashTransportError: Error {
 /// Minimal BSD UDP transport for the dash control and RTP planes.
 /// Create this only after iOS has joined the dashboard's Wi-Fi network.
 /// Closing a transport is terminal; create a new instance to reconnect.
-public final class DashUDPTransport {
+public final class DashUDPTransport: DashTransport {
     public static let dashAddress = "192.168.1.1"
     public static let broadcastAddress = "192.168.1.255"
     public static let controlPort: UInt16 = 2000
