@@ -25,3 +25,6 @@ jobs:
 
       - name: Run tests
         run: swift test
+
+      - name: Build for iOS Simulator
+        run: xcodebuild -scheme TripperDashCore -destination 'generic/platform=iOS Simulator' build
