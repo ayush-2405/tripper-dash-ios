@@ -1,4 +1,4 @@
-name: iOS Swift Package CI
+name: iOS Swift Package and App CI
 
 on:
   push:
@@ -26,5 +26,11 @@ jobs:
       - name: Run tests
         run: swift test
 
-      - name: Build for iOS Simulator
-        run: xcodebuild -scheme TripperDashCore -destination 'generic/platform=iOS Simulator' build
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate iOS app project
+        run: xcodegen generate
+
+      - name: Build iOS app for Simulator
+        run: xcodebuild -project TripperDash.xcodeproj -scheme TripperDash -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
