@@ -34,6 +34,7 @@ public final class DashUDPTransport: DashTransport {
     private let socketLock = NSLock()
     private let queue = DispatchQueue(label: "tripperdash.udp.receive")
     private var receiveStarted = false
+    public var onPacketReceived: ((Int) -> Void)?
 
     public init() throws {
         var tx: Int32 = -1
@@ -97,6 +98,7 @@ public final class DashUDPTransport: DashTransport {
                 }
                 if count > 0 {
                     let packet = Data(buffer[0..<count])
+                    self.onPacketReceived?(count)
                     callbackQueue.async { handler(packet) }
                 } else if count < 0 && errno == EINTR {
                     continue
