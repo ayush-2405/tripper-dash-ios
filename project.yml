@@ -1,0 +1,23 @@
+name: TripperDash
+options:
+  bundleIdPrefix: com.ayushsingh
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  TripperDash:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Sources/TripperDashCore
+    info:
+      path: App/Info.plist
+    entitlements:
+      path: App/TripperDash.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ayushsingh.tripperdash
+        PRODUCT_NAME: TripperDash
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
