@@ -8,10 +8,11 @@ The first protocol-core milestone is implemented in Swift on branch `ios/dash-au
 
 ### Core modules
 
-- `K1GPacket`: K1G packet construction, incoming TLV parsing and rolling sequence patching.
+- `K1GPacket` / `DashCommands`: K1G packet construction, incoming TLV parsing, sequence patching and captured startup burst.
 - `DashAuth`: RSA-1024 / AES-256 authentication state machine.
 - `DashUDPTransport`: UDP control broadcast, receive socket and RTP sender.
 - `DashWiFiConnector`: user-authorized join of a known dashboard SSID using NetworkExtension.
+- `DashSession`: authentication handshake coordinator (startup burst → RSA key exchange → authenticated state).
 - `DashSession`: minimal authentication coordinator that sends the auth request, processes incoming TLVs and handles accept/reject responses.
 
 ## Build
