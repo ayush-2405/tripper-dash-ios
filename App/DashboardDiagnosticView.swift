@@ -40,6 +40,9 @@ final class DashboardDiagnosticModel: ObservableObject {
         do {
             let transport = try DashUDPTransport()
             self.transport = transport
+            transport.onPacketReceived = { [weak self] _ in
+                Task { @MainActor in self?.packetsReceived += 1 }
+            }
             let session = DashSession(ssid: ssid, transport: transport)
             self.session = session
             session.onStateChange = { [weak self] state in
